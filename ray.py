@@ -21,7 +21,7 @@ screenHeight = 400
 ################################
 # Map
 
-# Make sure map has equal number of rows
+# Make sure map has equal number of columns
 map = [
  [1,1,2,1,1,1,2,1,1],
  [1,0,0,0,0,0,0,0,1],
