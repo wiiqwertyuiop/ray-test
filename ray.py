@@ -2,9 +2,7 @@ import math
 import pygame
 
 # Todo:
-# Change coordinates so it makes sense
 # Different wall heights
-# Comments
 
 ################################
 
