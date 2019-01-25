@@ -68,7 +68,7 @@ def main():
   hfov = player.fov / 2
   distanceToPlane = (screenWidth/2) / tan(hfov)
 
-  while update(): # loop until we quit
+  while updating(): # loop until we quit
 
     ray = Rays(player.dir - hfov)
     
@@ -270,7 +270,7 @@ class Rays:
 ################################
 # update screen
 
-def update():
+def updating():
 
     player.update()
     pygame.display.flip()
