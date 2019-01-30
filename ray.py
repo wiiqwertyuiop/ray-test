@@ -78,7 +78,10 @@ def main(screen):
         stepY = 1
         sideDistY = (mapY + 1.0 - player.Ypos) * deltaDistY
       
-      while hit == 0:
+      lastH = -1
+      start = 0
+      
+      while True:
       
         if sideDistX < sideDistY:
           sideDistX += deltaDistX
@@ -89,61 +92,68 @@ def main(screen):
           mapY += stepY
           side = 1
         
-        hit = map[mapY][mapX]
+        if mapY < 0 or mapX < 0: break
+        try: hit = map[mapY][mapX]
+        except: break
+        if not hit: continue
 
-      # Calculate distance projected on camera direction (Euclidean distance will give fisheye effect!)
-      if (side == 0): perpWallDist = (mapX - player.Xpos + (1 - stepX) / 2) / (rayDirX+ 0.00001)
-      else:           perpWallDist = (mapY - player.Ypos + (1 - stepY) / 2) / (rayDirY+ 0.00001)
-    
-      # Calculate height of line to draw on screen
-      lineHeight = int(screenHeight / (perpWallDist+0.00001))
+        # Calculate distance projected on camera direction (Euclidean distance will give fisheye effect!)
+        if (side == 0): perpWallDist = (mapX - player.Xpos + (1 - stepX) / 2) / (rayDirX+ 0.00001)
+        else:           perpWallDist = (mapY - player.Ypos + (1 - stepY) / 2) / (rayDirY+ 0.00001)
       
-      #print( screenHeight / lineHeight )
-      
-      # calculate lowest and highest pixel to fill in current stripe
-      drawStart = int(-lineHeight / 2 + screenHeight / 2)
-      
-      if(hit == 2): drawStart = int(-lineHeight + screenHeight / 2)
-      
-      if(drawStart < 0): drawStart = 0
-      drawEnd = int(lineHeight / 2 + screenHeight / 2)
-      if(drawEnd >= screenHeight): drawEnd = screenHeight - 1
-     
-      c1 = (255 - 9.5*math.fabs(perpWallDist/0.5)) 
-      c2 = c1
-      c3 = c1
-      
-      if(hit == 2): c2 = 0
-      if(hit == 3): c1 = 0
-      if(hit == 4): c3 = 0
-      
-      if(side == 0): 
-        c1 /= 1.05
-        c2 /= 1.05
-        c3 /= 1.05
-      
-      color = (c1, c2, c3)
-      try:    
+        # Calculate height of line to draw on screen
+        lineHeight = int(screenHeight / (perpWallDist+0.00001))
+        
+        # calculate lowest and highest pixel to fill in current stripe
+        drawStart = int(-lineHeight / 2 + screenHeight / 2)
+        
+        if(hit == 2): drawStart = int(-lineHeight + screenHeight / 2)        
+        if(drawStart < 0): drawStart = 0
+        
+        if(lastH != -1 and drawStart >= lastH): continue
+          
+        lastH = drawStart
+        
+        drawEnd = int(lineHeight / 2 + screenHeight / 2)
+        if(drawEnd >= screenHeight): drawEnd = screenHeight - 1
+        
+        if (start > 0): # fix this # walk speed # more wall heights
+          drawEnd = start
+        start = drawStart
+        
+        lighting = perpWallDist-2.5 # this is when to start darkening
+        if lighting < 0: lighting = 0
+        lighting /= 0.5 # this is how fast to start changing
+        
+        c1 = (255 - 13*lighting) # this is how much to change it
+        c2 = c1
+        c3 = c1
+        
+        if(hit == 2): c1 = 0; c2 = 0
+        if(hit == 3): c2 = 0
+        if(hit == 4): c3 = 0; c1 = 0
+        
+        if(side == 0): 
+          c1 /= 1.05
+          c2 /= 1.05
+          c3 /= 1.05
+        
+        color = (int(c1), int(c2), int(c3))
+        
         pygame.draw.line(screen, color, (x, drawStart), (x, drawEnd))
-      except:
-        print(perpWallDist)
-        input("Error")
-    
+        
+      
     player.update()
     pygame.display.flip()
     screen.fill((0,0,0))
     
-
-
 
 # Event loop
 def event_loop():
   
   for event in pygame.event.get():
           if event.type == pygame.QUIT:
-                  return False
-            
-            
+                  return False            
   return True
 
 
@@ -166,7 +176,7 @@ class Player():
     self.planeY = 0.66
     
     self.WalkSpeed = 0.01
-    self.TurnSpeed = 0.2
+    self.TurnSpeed = 0.3
   
   # Move player
   def update(self):
