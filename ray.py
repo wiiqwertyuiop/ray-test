@@ -11,13 +11,24 @@ pygame.init()
 pygame.display.set_caption("Raycaster")
 
 map = [
- [1,1,2,1,1,1,2,1,1],
+ [1,1,2,1,1,2,1,1,1],
  [1,0,0,0,0,0,0,0,1],
  [1,0,0,0,0,0,0,0,1],
  [1,0,0,0,0,4,0,0,1],
- [1,0,4,4,4,2,0,0,1],
+ [1,0,4,4,4,3,0,0,1],
  [1,0,0,0,0,4,0,0,3],
  [1,0,0,0,0,4,0,0,1],
+ [1,1,2,1,1,1,2,1,1]
+]
+
+hmap = [
+ [1,1,2,1,-0.1,3,0.05,1,1],
+ [1,0,0,0,0,0,0,0,1],
+ [1,0,0,0,0,0,0,0,1],
+ [1,0,0,0,0,7,0,0,1],
+ [1,0,0.5,1,3,2,0,0,1],
+ [1,0,0,0,0,1,0,0,5],
+ [1,0,0,0,0,2,0,0,1],
  [1,1,2,1,1,1,2,1,1]
 ]
 
@@ -38,6 +49,8 @@ def tan(angle):
 ################################
   
 def main(screen):
+  
+  screenYpos = screenHeight/2
   
   while event_loop():
     
@@ -102,23 +115,22 @@ def main(screen):
         else:           perpWallDist = (mapY - player.Ypos + (1 - stepY) / 2) / (rayDirY+ 0.00001)
       
         # Calculate height of line to draw on screen
-        lineHeight = int(screenHeight / (perpWallDist+0.00001))
+        lineHeight = int(screenHeight / (perpWallDist+0.00001))/2
         
         # calculate lowest and highest pixel to fill in current stripe
-        drawStart = int(-lineHeight / 2 + screenHeight / 2)
-        
-        if(hit == 2): drawStart = int(-lineHeight + screenHeight / 2)        
+        scale = hmap[mapY][mapX]
+        drawStart = int(screenYpos - (lineHeight)*scale)  
+              
         if(drawStart < 0): drawStart = 0
         
         if(lastH != -1 and drawStart >= lastH): continue
           
         lastH = drawStart
         
-        drawEnd = int(lineHeight / 2 + screenHeight / 2)
+        drawEnd = int(screenYpos + lineHeight)
         if(drawEnd >= screenHeight): drawEnd = screenHeight - 1
         
-        if (start > 0): # fix this # walk speed # more wall heights
-          drawEnd = start
+        if (start > 0): drawEnd = start
         start = drawStart
         
         lighting = perpWallDist-2.5 # this is when to start darkening
@@ -141,6 +153,7 @@ def main(screen):
         color = (int(c1), int(c2), int(c3))
         
         pygame.draw.line(screen, color, (x, drawStart), (x, drawEnd))
+        if (drawStart == 0): break
         
       
     player.update()
