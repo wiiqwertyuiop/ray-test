@@ -46,6 +46,10 @@ def tan(angle):
   
 def main(screen):
   
+  player = Player()
+  
+  screenWidth = windowWidth
+  screenHeight = windowHeight
   screenYpos = screenHeight/2
   
   while event_loop():
@@ -223,13 +227,8 @@ class Player():
     
 ################################
 
-screenWidth = windowWidth
-screenHeight = windowHeight
-
 pygame.init()
 pygame.display.set_caption("Raycaster")
-
-player = Player()
 
 main( pygame.display.set_mode((windowWidth, windowHeight)) )
 
