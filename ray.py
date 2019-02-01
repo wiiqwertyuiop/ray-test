@@ -4,11 +4,7 @@ import pygame
 windowWidth = 500
 windowHeight = 420
 
-screenWidth = windowWidth
-screenHeight = windowHeight
-
-pygame.init()
-pygame.display.set_caption("Raycaster")
+################################
 
 map = [
  [1,1,2,1,1,2,1,1,1],
@@ -68,13 +64,9 @@ def main(screen):
       
       deltaDistX = math.fabs(1 / (rayDirX + 0.00001) )
       deltaDistY = math.fabs(1 / (rayDirY + 0.00001) )
-      perpWallDist = 0
       
       stepX = 0
       stepY = 0
-      
-      hit = 0
-      side = 0
 
       # calculate step and initial sideDist
       if (rayDirX < 0):
@@ -91,12 +83,12 @@ def main(screen):
         stepY = 1
         sideDistY = (mapY + 1.0 - player.Ypos) * deltaDistY
       
-      lastH = -1
-      start = 0
+      tallestH = None
       
+      # Loop through map
       while True:
       
-        if sideDistX < sideDistY:
+        if (sideDistX < sideDistY):
           sideDistX += deltaDistX
           mapX += stepX
           side = 0
@@ -105,57 +97,60 @@ def main(screen):
           mapY += stepY
           side = 1
         
-        if mapY < 0 or mapX < 0: break
+        # If we go past the map stop looping
+        if (mapY < 0 or mapX < 0): break
         try: hit = map[mapY][mapX]
         except: break
-        if not hit: continue
+        if not hit: continue # if we have not hit anything loop until we do
 
         # Calculate distance projected on camera direction (Euclidean distance will give fisheye effect!)
         if (side == 0): perpWallDist = (mapX - player.Xpos + (1 - stepX) / 2) / (rayDirX+ 0.00001)
         else:           perpWallDist = (mapY - player.Ypos + (1 - stepY) / 2) / (rayDirY+ 0.00001)
-      
-        # Calculate height of line to draw on screen
-        lineHeight = int(screenHeight / (perpWallDist+0.00001))/2
         
-        # calculate lowest and highest pixel to fill in current stripe
-        scale = hmap[mapY][mapX]
-        drawStart = int(screenYpos - (lineHeight)*scale)  
-              
-        if(drawStart < 0): drawStart = 0
+        # use wall distance to calculate lighting
+        lighting = perpWallDist
+        lighting -= 3 # this is when to start darkening
+        if (lighting < 0): lighting = 0
+        lighting /= 0.4 # this is how fast to start changing
+        lighting *= 15 # this is by how much to change it
         
-        if(lastH != -1 and drawStart >= lastH): continue
-          
-        lastH = drawStart
-        
-        drawEnd = int(screenYpos + lineHeight)
-        if(drawEnd >= screenHeight): drawEnd = screenHeight - 1
-        
-        if (start > 0): drawEnd = start
-        start = drawStart
-        
-        lighting = perpWallDist-2.5 # this is when to start darkening
-        if lighting < 0: lighting = 0
-        lighting /= 0.5 # this is how fast to start changing
-        
-        c1 = (255 - 13*lighting) # this is how much to change it
+        c1 = (255 - lighting)
+        if (c1 <= 69): break # If the wall is too far away don't even bother drawing it
         c2 = c1
         c3 = c1
         
+        # Calculate height of line to draw on screen
+        lineHeight = int(screenHeight / (perpWallDist+0.00001))/2
+        
+        # calculate top pixel for column
+        scale = hmap[mapY][mapX]
+        drawStart = int(screenYpos - (lineHeight)*scale)    
+        if(drawStart < 0): drawStart = 0
+        
+        if (tallestH != None): # if we have a record of a tallest wall it means we hit a wall behind that one
+          if(drawStart >= tallestH): continue # if you can't see this wall behind the wall in front of it, then don't bother drawing it
+          drawEnd = tallestH # if we can see this wall, then set the end pixel to the pixel above the wall in front of us
+        else:               
+          # calculate last pixel in column
+          drawEnd = int(screenYpos + lineHeight)
+          if(drawEnd >= screenHeight): drawEnd = screenHeight
+          
+        tallestH = drawStart # remeber the tallest height
+        
+        # do different colored walls
         if(hit == 2): c1 = 0; c2 = 0
         if(hit == 3): c2 = 0
-        if(hit == 4): c3 = 0; c1 = 0
+        if(hit == 4): c3 = 0; c1 = 0        
+        if(side == 0): c1 /= 1.05; c2 /= 1.05; c3 /= 1.05 # darken side of block
         
-        if(side == 0): 
-          c1 /= 1.05
-          c2 /= 1.05
-          c3 /= 1.05
-        
+        # finally the draw line
         color = (int(c1), int(c2), int(c3))
-        
         pygame.draw.line(screen, color, (x, drawStart), (x, drawEnd))
+        
+        # If we drew a column with the size of the whole screen height stop looping
         if (drawStart == 0): break
         
-      
+    # update screen
     player.update()
     pygame.display.flip()
     screen.fill((0,0,0))
@@ -165,8 +160,8 @@ def main(screen):
 def event_loop():
   
   for event in pygame.event.get():
-          if event.type == pygame.QUIT:
-                  return False            
+    if (event.type == pygame.QUIT): 
+      return False            
   return True
 
 
@@ -177,8 +172,7 @@ class Player():
 
   def __init__(self):
   
-    ## set player starting attributes
-
+    # set player starting attributes
     self.Xpos = 2
     self.Ypos = 2
     
@@ -218,9 +212,7 @@ class Player():
     
     if keys[pygame.K_UP]:
       if( map[int(self.Ypos)][int(self.Xpos + self.dirX * self.WalkSpeed)] == 0): 
-        self.Xpos += self.dirX * self.WalkSpeed 
-        #print(self.Xpos)
-        
+        self.Xpos += self.dirX * self.WalkSpeed         
       if( map[int(self.Ypos + self.dirY * self.WalkSpeed)][int(self.Xpos)] == 0):
         self.Ypos += self.dirY * self.WalkSpeed 
         
@@ -228,10 +220,14 @@ class Player():
       if( map[int(self.Ypos)][int(self.Xpos - self.dirX * self.WalkSpeed)] == 0): self.Xpos -= self.dirX * self.WalkSpeed 
       if( map[int(self.Ypos - self.dirY * self.WalkSpeed)][int(self.Xpos)] == 0): self.Ypos -= self.dirY * self.WalkSpeed 
     
-    #print(map[int(self.Ypos)][ int(self.Xpos + self.dirX * self.WalkSpeed) ])
-    
     
 ################################
+
+screenWidth = windowWidth
+screenHeight = windowHeight
+
+pygame.init()
+pygame.display.set_caption("Raycaster")
 
 player = Player()
 
